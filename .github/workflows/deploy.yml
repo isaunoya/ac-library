@@ -1,0 +1,53 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # 触发工作流的分支，可以根据需要修改
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build the site
+      run: npm run build
+
+    - name: Deploy to GitHub Pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+        # 切换到一个临时目录
+        mkdir gh-pages-branch
+        cd gh-pages-branch
+
+        # 初始化一个新的 git 仓库
+        git init
+        git remote add origin https://github.com/${{ github.repository }}.git
+        git checkout -b gh-pages
+
+        # 拷贝构建产物
+        cp -r ../build/* .
+
+        # 添加并提交构建产物
+        git add .
+        git commit -m "Deploy to GitHub Pages"
+        git push --force origin gh-pages
+
+        # 清理临时目录
+        cd ..
+        rm -rf gh-pages-branch
